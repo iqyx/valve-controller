@@ -4,12 +4,14 @@ from ValveController.MainToolbar import *
 from ValveController.ScheduleControl import *
 from ValveController.ValveControl import *
 from ValveController.ScheduleView import *
-
+from ValveController.VcDriver import *
 
 class MainWnd (QtGui.QMainWindow):
 
 	def __init__(self):
 		super(MainWnd, self).__init__()
+
+		self.vc_driver = VcDriver()
 
 		self.settings =  QtCore.QSettings("valve_controller.ini", QtCore.QSettings.IniFormat)
 		self.initUi()
@@ -42,6 +44,9 @@ class MainWnd (QtGui.QMainWindow):
 		self.schedule_view = ScheduleView()
 		self.schedule_view.setHeaders(("Time", "0", "1", "2", "3", "4", "5", "6", "7"))
 
+		self.toolbar = MainToolbar()
+		self.toolbar.setVcDriver(self.vc_driver)
+
 		# Configure main window
 		self.setDockNestingEnabled(True)
 		self.resize(600, 400)
@@ -52,6 +57,7 @@ class MainWnd (QtGui.QMainWindow):
 		self.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.schedule_control)
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.valve_control)
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.schedule_view)
+		self.addToolBar(self.toolbar)
 
 		# and restore saved settings from last session
 		self.loadSettings()

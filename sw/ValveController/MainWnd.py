@@ -11,41 +11,49 @@ class MainWnd (QtGui.QMainWindow):
 	def __init__(self):
 		super(MainWnd, self).__init__()
 
-		self.vc_driver = VcDriver()
+		self._vc_driver = VcDriver()
 
-		self.settings =  QtCore.QSettings("valve_controller.ini", QtCore.QSettings.IniFormat)
+		self._settings =  QtCore.QSettings("valve_controller.ini", QtCore.QSettings.IniFormat)
 		self.initUi()
 		self.show()
 
+		# window status update timer
+		self._status_utimer = QtCore.QTimer()
+		self._status_utimer.timeout.connect(self.updateStatusBar)
+		self._status_utimer.start(1000)
+
+
+	def updateStatusBar(self):
+		self.statusBar().showMessage(self._vc_driver.getStatus())
 
 	def saveSettings(self):
-		self.settings.beginGroup("MainWnd")
-		self.settings.setValue("state", self.saveState())
-		self.settings.endGroup()
+		self._settings.beginGroup("MainWnd")
+		self._settings.setValue("state", self.saveState())
+		self._settings.endGroup()
 
 
 	def loadSettings(self):
-		self.settings.beginGroup("MainWnd")
-		self.restoreState(self.settings.value("state").toByteArray())
-		self.settings.endGroup()
+		self._settings.beginGroup("MainWnd")
+		self.restoreState(self._settings.value("state").toByteArray())
+		self._settings.endGroup()
 
 
 	def initUi(self):
 		# Schedule control can be used to seek in time, load/clear valve
 		# schedules, etc. It also displays all possible actions for the user.
-		self.schedule_control = ScheduleControl()
+		self._schedule_control = ScheduleControl()
 
 		# Valve control can override active valve status and displays
 		# current status of all valves.
-		self.valve_control = ValveControl()
+		self._valve_control = ValveControl()
 
 		# Just displays loaded valve schedule. May be used to seek in time
 		# when the schedule is stopped/paused ("run from here" function)
-		self.schedule_view = ScheduleView()
-		self.schedule_view.setHeaders(("Time", "0", "1", "2", "3", "4", "5", "6", "7"))
+		self._schedule_view = ScheduleView()
+		self._schedule_view.setHeaders(("Time", "0", "1", "2", "3", "4", "5", "6", "7"))
 
-		self.toolbar = MainToolbar()
-		self.toolbar.setVcDriver(self.vc_driver)
+		self._toolbar = MainToolbar()
+		self._toolbar.setVcDriver(self._vc_driver)
 
 		# Configure main window
 		self.setDockNestingEnabled(True)
@@ -54,10 +62,10 @@ class MainWnd (QtGui.QMainWindow):
 		self.setWindowTitle('Valve controller')
 
 		# Add all available widgets/docks
-		self.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.schedule_control)
-		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.valve_control)
-		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self.schedule_view)
-		self.addToolBar(self.toolbar)
+		self.addDockWidget(QtCore.Qt.TopDockWidgetArea, self._schedule_control)
+		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self._valve_control)
+		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self._schedule_view)
+		self.addToolBar(self._toolbar)
 
 		# and restore saved settings from last session
 		self.loadSettings()
@@ -65,4 +73,5 @@ class MainWnd (QtGui.QMainWindow):
 
 	def closeEvent(self, event):
 		self.saveSettings()
+		self._vc_driver.disconnect()
 		QtGui.qApp.quit()

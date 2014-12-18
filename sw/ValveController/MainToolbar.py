@@ -1,6 +1,15 @@
 from PyQt4 import QtGui, QtCore
 from ValveController.VcDriver import *
 
+
+class VcSelectBox(QtGui.QComboBox):
+
+	def __init__(self):
+		super(VcSelectBox, self).__init__()
+
+
+
+
 class MainToolbar(QtGui.QToolBar):
 
 	def __init__(self):
@@ -10,12 +19,18 @@ class MainToolbar(QtGui.QToolBar):
 
 		self._vc_driver = None
 
+		self._select_box = VcSelectBox()
+		self._select_box.addItem("First controller")
+		self._select_box.addItem("Second controller")
+
 		self._a_connect = QtGui.QAction(QtGui.QIcon("img/connect.svg"), "Connect", self)
 		self._a_connect.triggered.connect(self.connect)
 		# self._a_connect.setShortcut("ctrl+c")
 		self._a_disconnect = QtGui.QAction(QtGui.QIcon("img/disconnect.svg"), "Disconnect", self)
 		self._a_disconnect.triggered.connect(self.disconnect)
+		self._a_disconnect.setEnabled(False)
 
+		self.addWidget(self._select_box)
 		self.addAction(self._a_connect)
 		self.addAction(self._a_disconnect)
 
@@ -32,6 +47,7 @@ class MainToolbar(QtGui.QToolBar):
 			# manipulate toolbar buttons and vcdriver selection
 			self._a_connect.setEnabled(False)
 			self._a_disconnect.setEnabled(True)
+			self._select_box.setEnabled(False)
 
 	def disconnect(self):
 		if self._vc_driver:
@@ -40,3 +56,4 @@ class MainToolbar(QtGui.QToolBar):
 			# manipulate toolbar buttons and vcdriver selection
 			self._a_connect.setEnabled(True)
 			self._a_disconnect.setEnabled(False)
+			self._select_box.setEnabled(True)

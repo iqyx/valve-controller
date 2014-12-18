@@ -39,9 +39,6 @@ class MainWnd (QtGui.QMainWindow):
 
 
 	def initUi(self):
-		# Schedule control can be used to seek in time, load/clear valve
-		# schedules, etc. It also displays all possible actions for the user.
-		self._schedule_control = ScheduleControl()
 
 		# Valve control can override active valve status and displays
 		# current status of all valves.
@@ -51,6 +48,12 @@ class MainWnd (QtGui.QMainWindow):
 		# when the schedule is stopped/paused ("run from here" function)
 		self._schedule_view = ScheduleView()
 		self._schedule_view.setHeaders(("Time", "0", "1", "2", "3", "4", "5", "6", "7"))
+
+		# Schedule control can be used to seek in time, load/clear valve
+		# schedules, etc. It also displays all possible actions for the user.
+		self._schedule_control = ScheduleControl()
+		self._schedule_control.setScheduleView(self._schedule_view)
+		self._schedule_control.setVcDriver(self._vc_driver)
 
 		self._toolbar = MainToolbar()
 		self._toolbar.setVcDriver(self._vc_driver)
@@ -62,10 +65,10 @@ class MainWnd (QtGui.QMainWindow):
 		self.setWindowTitle('Valve controller')
 
 		# Add all available widgets/docks
-		self.addDockWidget(QtCore.Qt.TopDockWidgetArea, self._schedule_control)
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self._valve_control)
 		self.addDockWidget(QtCore.Qt.BottomDockWidgetArea, self._schedule_view)
 		self.addToolBar(self._toolbar)
+		self.addToolBar(self._schedule_control)
 
 		# and restore saved settings from last session
 		self.loadSettings()

@@ -9,11 +9,17 @@ class ScheduleView(QtGui.QDockWidget):
 		self.setMinimumWidth(400)
 		self.setMinimumHeight(120)
 
-		self.table = QtGui.QTreeWidget()
-		self.setWidget(self.table);
+		self._table = QtGui.QTreeWidget()
+		self.setWidget(self._table);
 
 
-	def setHeaders(self, headers):
-		self.table.setColumnCount(len(headers))
-		self.table.setHeaderLabels(headers)
+	def setValves(self, valves):
+		self._table.setColumnCount(len(valves) + 1)
 
+		self._table.headerItem().setText(0, "Time")
+		self._table.setColumnWidth(0, 120)
+		i = 1
+		for valve in valves:
+			self._table.headerItem().setText(i, valve)
+			self._table.setColumnWidth(i, 20)
+			i += 1

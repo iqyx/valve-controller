@@ -30,6 +30,8 @@ class VcDriver(object):
 		# ordered list of valve controllers (VcController instances)
 		self._vc_list = []
 		self._connected = False
+		self._valve_state = []
+		self._highlight_state = []
 
 
 	def connect(self, vc_list):
@@ -46,6 +48,8 @@ class VcDriver(object):
 			print "connecting vcdriver"
 			self._vc_list = vc_list
 			self._connected = True
+			self._valve_state = []
+			self._highlight_state = []
 
 		return self
 
@@ -69,9 +73,18 @@ class VcDriver(object):
 		"""Return status of all controllers as a single string."""
 
 		if self._connected:
-			return "Active controllers %s" % ",".join("%s (%s)" % (vc.getUrl(), vc.getStatus()) for vc in self._vc_list)
+			return "%d valves, active controllers %s" % (self.numOfValves(), ",".join("%s (%s)" % (vc.getUrl(), vc.getStatus()) for vc in self._vc_list))
 		else:
 			return "Disconnected"
+
+
+	def numOfValves(self):
+		"""Get number of valves on all connected controllers."""
+
+		num = 0
+		for vc in self._vc_list:
+			num += vc._valve_count
+		return num
 
 
 	def request(self, req):
@@ -103,8 +116,9 @@ class VcDriver(object):
 					vc_valves.append(valve_num - vc._valve_start)
 
 			vc_valves_bin = self.valvesToBin(vc_valves)
-			self.request("%s?status_set=%d" % (vc.getUrl, vc_valves_vin))
+			self.request("%s?status_set=%d" % (vc.getUrl, vc_valves_bin))
 
+		self._highlight_state = valves
 
 
 

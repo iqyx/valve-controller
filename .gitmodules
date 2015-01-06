@@ -1,0 +1,6 @@
+[submodule "fw/chibios"]
+	path = fw/chibios
+	url = https://github.com/ChibiOS/ChibiOS.git
+[submodule "fw/lwip"]
+	path = fw/lwip
+	url = git://git.savannah.nongnu.org/lwip.git

@@ -12,7 +12,9 @@
 #define VC_CS2 12
 #define VC_CS2PORT GPIOC
 
-#define VC_STATE_VALID_AGE 20
+#define VC_STATE_VALID_AGE 10
+
+#define VC_UDP_PORT 5000
 
 struct valve_controller {
 
@@ -49,6 +51,10 @@ int32_t vc_is_stalled(struct valve_controller *vc);
 int32_t vc_set_valves(struct valve_controller *vc, uint32_t valves);
 #define VC_SET_VALVES_OK 0
 #define VC_SET_VALVES_FAILED -1
+
+int32_t vc_set_highlight(struct valve_controller *vc, uint32_t highlight);
+#define VC_SET_HIGHLIGHT_OK 0
+#define VC_SET_HIGHLIGHT_FAILED -1
 
 
 #endif

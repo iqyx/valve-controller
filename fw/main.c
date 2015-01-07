@@ -1,7 +1,8 @@
+#include <string.h>
+
 #include "ch.h"
 #include "hal.h"
 #include "chprintf.h"
-
 #include "lwipthread.h"
 #include "lwip/opt.h"
 #include "lwip/def.h"
@@ -14,27 +15,44 @@
 #include "netif/etharp.h"
 #include "netif/ppp_oe.h"
 #include <lwip/sockets.h>
-#include <string.h>
 
-#include "expander.h"
+#include "valve_controller.h"
 
 #define ID_BASE 0x1ffff7e8
 
+struct valve_controller vc;
 
 static WORKING_AREA(waThread1, 128);
 static msg_t Thread1(void *arg) {
+
 	(void)arg;
 	chRegSetThreadName("led");
 
 	while (1) {
-		chThdSleepMilliseconds(500);
-		palClearPad(GPIOB, 8);
-
-		chThdSleepMilliseconds(500);
-		palSetPad(GPIOB, 8);
+		if (vc_is_stalled(&vc)) {
+			palClearPad(GPIOB, 8);
+		} else {
+			palTogglePad(GPIOB, 8);
+		}
+		chThdSleepMilliseconds(10);
 	}
 	return 0;
 }
+
+
+static WORKING_AREA(wa_expander_thread, 1024);
+static msg_t expander_thread(void *arg) {
+
+	(void)arg;
+	chRegSetThreadName("exp");
+
+	while (1) {
+		vc_set_valves(&vc, 0x00000c00);
+		chThdSleepMilliseconds(10000);
+	}
+	return 0;
+}
+
 
 int main(void) {
 
@@ -43,10 +61,10 @@ int main(void) {
 
 	chThdSleepMilliseconds(100);
 
-	expander_init();
-
+	/* Status LED thread .*/
 	chThdCreateStatic(waThread1, sizeof(waThread1), NORMALPRIO, Thread1, NULL);
 
+	/* TCP/IP stack initialization. */
 	uint8_t mac_address[6] = {
 		0x02,
 		*(unsigned char *)(ID_BASE + 7),
@@ -57,13 +75,17 @@ int main(void) {
 	};
 	struct lwipthread_opts default_ip = {
 		.macaddress = mac_address,
-		.address = 0x1400a8c0,
-		.netmask = 0x00ffffff,
-		.gateway = 0x0100a8c0
+		.address = 0x1400a8c0,        /* 192.168.0.20  */
+		.netmask = 0x00ffffff,        /* 255.255.255.0 */
+		.gateway = 0x0100a8c0         /* 192.168.0.1   */
 	};
 	chThdCreateStatic(wa_lwip_thread, LWIP_THREAD_STACK_SIZE, NORMALPRIO + 1, lwip_thread, &default_ip);
 
+	/* Valve controller initialization. */
+	vc_init(&vc);
+	chThdCreateStatic(wa_expander_thread, sizeof(wa_expander_thread), NORMALPRIO, expander_thread, NULL);
 
+	/* Main task observing link cnages and doing DHCP. */
 	int last_link_status = 0;
 	while (1) {
 
@@ -77,11 +99,13 @@ int main(void) {
 		}
 		last_link_status = current_link_status;
 
+		/* GPIOC0 is orange ethernet socket LED. Lit it when DHCP is bound. */
+		if (netif_default->dhcp->state == DHCP_BOUND) {
+			palClearPad(GPIOC, 0);
+		} else {
+			palSetPad(GPIOC, 0);
+		}
+
 		chThdSleepMilliseconds(100);
 	}
-
-	while (1) {
-
-	}
-
 }

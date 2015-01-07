@@ -135,8 +135,10 @@ CSRC = $(PORTSRC) \
        $(CHIBIOS)/os/various/chprintf.c \
        $(CHIBIOS)/os/various/syscalls.c \
        $(LWSRC) \
+       mcp23s17.c \
+       switching_board.c \
        board.c \
-       expander.c \
+       valve_controller.c \
        main.c
 
 

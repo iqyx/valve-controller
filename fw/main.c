@@ -34,21 +34,7 @@ static msg_t Thread1(void *arg) {
 		} else {
 			palTogglePad(GPIOB, 8);
 		}
-		chThdSleepMilliseconds(10);
-	}
-	return 0;
-}
-
-
-static WORKING_AREA(wa_expander_thread, 1024);
-static msg_t expander_thread(void *arg) {
-
-	(void)arg;
-	chRegSetThreadName("exp");
-
-	while (1) {
-		vc_set_valves(&vc, 0x00000c00);
-		chThdSleepMilliseconds(10000);
+		chThdSleepMilliseconds(100);
 	}
 	return 0;
 }
@@ -83,7 +69,6 @@ int main(void) {
 
 	/* Valve controller initialization. */
 	vc_init(&vc);
-	chThdCreateStatic(wa_expander_thread, sizeof(wa_expander_thread), NORMALPRIO, expander_thread, NULL);
 
 	/* Main task observing link cnages and doing DHCP. */
 	int last_link_status = 0;

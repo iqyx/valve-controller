@@ -1,3 +1,6 @@
+import threading
+import socket
+import struct
 
 class VcController(object):
 
@@ -20,9 +23,6 @@ class VcController(object):
 			return "OK"
 
 
-	def getUrl(self):
-		return "http://%s:%d/" % (self._host, self._port)
-
 
 class VcDriver(object):
 
@@ -32,6 +32,9 @@ class VcDriver(object):
 		self._connected = False
 		self._valve_state = []
 		self._highlight_state = []
+		self._update_timer = None
+		self._udp_socket = None
+		self._update()
 
 
 	def connect(self, vc_list):
@@ -47,9 +50,10 @@ class VcDriver(object):
 		if not self._connected:
 			print "connecting vcdriver"
 			self._vc_list = vc_list
-			self._connected = True
 			self._valve_state = []
 			self._highlight_state = []
+			self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			self._connected = True
 
 		return self
 
@@ -65,6 +69,7 @@ class VcDriver(object):
 			print "disconnecting vcdriver"
 			self._connected = False
 			self._vc_list = []
+			self._udp_socket = None
 
 		return self
 
@@ -73,7 +78,7 @@ class VcDriver(object):
 		"""Return status of all controllers as a single string."""
 
 		if self._connected:
-			return "%d valves, active controllers %s" % (self.numOfValves(), ",".join("%s (%s)" % (vc.getUrl(), vc.getStatus()) for vc in self._vc_list))
+			return "%d valves, active controllers %s" % (self.numOfValves(), ",".join("%s:%d (%s)" % (vc._host, vc._port, vc.getStatus()) for vc in self._vc_list))
 		else:
 			return "Disconnected"
 
@@ -87,49 +92,63 @@ class VcDriver(object):
 		return num
 
 
-	def request(self, req):
-		"""Make request to a single controller."""
+	def _valvesToBin(self, valves):
 
-		# When a request is to be made, check if any status refresh timer
-		# is running. Stop it and make the request. Then enable the timer
-		# again.
-		pass
+		c = 0
+		for valve in valves:
+			c += 1 << valve
+		return c
 
 
-	def setHighlight(self, valves):
+	def _update(self):
+		"""Update valve controllers ith current status."""
+
+		if self._update_timer:
+			self._update_timer.cancel()
+			self._update_timer = None
+
+		for vc in self._vc_list:
+			vc_valve_state = []
+			vc_highlight_state = []
+			# iterate all valves available on this controller
+			for valve_num in range(vc._valve_start, vc._valve_start + vc._valve_count):
+				if valve_num in self._valve_state:
+					vc_valve_state.append(valve_num - vc._valve_start)
+				if valve_num in self._highlight_state:
+					vc_highlight_state.append(valve_num - vc._valve_start)
+
+			vc_valves_bin = self._valvesToBin(vc_valve_state)
+			vc_highlights_bin = self._valvesToBin(vc_highlight_state)
+
+			#~ print "vc %s:%d: valves %d highlight %d" % (vc._host, vc._port, vc_valves_bin, vc_highlights_bin)
+			self._udp_socket.sendto("v%s" % struct.pack("!I", vc_valves_bin), (vc._host, vc._port))
+			self._udp_socket.sendto("h%s" % struct.pack("!I", vc_highlights_bin), (vc._host, vc._port))
+
+		self._update_timer = threading.Timer(0.5, self._update)
+		self._update_timer.daemon = True
+		self._update_timer.start()
+
+
+	def setHighlights(self, valves):
 		"""Highlight selected valves
 
 		Set valve highlight. Valves parameter is a list of valves to be
 		highlighted (old highlights will be removed, ie. highlighted valves
 		will be replaced with new set)
 		"""
-
-		for vc in self._vc_list:
-			vc_valves = []
-			# iterate all valves available on this controller
-			for valve_num in range(vc._valve_start, vc._valve_start + vc._valve_count):
-				if valve_num in valves:
-					# and check if valves from this controller are
-					# contained in the "valves" parameter. If so,
-					# add them to vc_valves with index local to
-					# this particular valve controller (remove offset)
-					vc_valves.append(valve_num - vc._valve_start)
-
-			vc_valves_bin = self.valvesToBin(vc_valves)
-			self.request("%s?status_set=%d" % (vc.getUrl, vc_valves_bin))
-
 		self._highlight_state = valves
+		self._update()
 
 
+	def setHighlight(self, valve, state):
 
-	def addHighlight(self, valves):
-		"""Highlight new valve"""
-		pass
-
-
-	def delHighlight(self, valves):
-		"""Remove existing valve highlight."""
-		pass
+		if state:
+			if not valve in self._highlight_state:
+				self._highlight_state.append(valve)
+		else:
+			if valve in self._highlight_state:
+				self._highlight_state.remove(valve)
+		self._update()
 
 
 	def setValves(self, valves):
@@ -138,14 +157,17 @@ class VcDriver(object):
 		Open valves which are in the "valves" parameter. All other valves
 		will be closed.
 		"""
-		pass
+		self._valve_state = valves
+		self._update()
 
 
-	def openValves(self, valves):
-		"""Open specified valves. Do not change other valves."""
-		pass
+	def setValve(self, valve, state):
 
+		if state:
+			if not valve in self._valve_state:
+				self._valve_state.append(valve)
+		else:
+			if valve in self._valve_state:
+				self._valve_state.remove(valve)
+		self._update()
 
-	def closeValves(self, valves):
-		"""Close specified valves. Do not change other valves."""
-		pass

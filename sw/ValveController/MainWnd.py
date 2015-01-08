@@ -43,6 +43,7 @@ class MainWnd (QtGui.QMainWindow):
 		# Valve control can override active valve status and displays
 		# current status of all valves.
 		self._valve_control = ValveControl()
+		self._valve_control.setVcDriver(self._vc_driver)
 
 		# Just displays loaded valve schedule. May be used to seek in time
 		# when the schedule is stopped/paused ("run from here" function)

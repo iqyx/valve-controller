@@ -48,7 +48,6 @@ class MainWnd (QtGui.QMainWindow):
 		# Just displays loaded valve schedule. May be used to seek in time
 		# when the schedule is stopped/paused ("run from here" function)
 		self._schedule_view = ScheduleView()
-		self._schedule_view.setValves(("0", "1", "2"))
 
 		# Schedule control can be used to seek in time, load/clear valve
 		# schedules, etc. It also displays all possible actions for the user.

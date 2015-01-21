@@ -21,7 +21,7 @@
 #define ID_BASE 0x1ffff7e8
 
 struct valve_controller vc;
-uint8_t test_buf[1024] = {0, };
+uint8_t test_buf[64] = {0, };
 
 static WORKING_AREA(waThread1, 128);
 static msg_t Thread1(void *arg) {
@@ -75,6 +75,35 @@ static msg_t test_thread(void *arg) {
 }
 
 
+static WORKING_AREA(wa_test_thread2, 1024);
+static msg_t test_thread2(void *arg) {
+
+	(void)arg;
+	chRegSetThreadName("test2");
+
+	struct udp_pcb *pcb;
+	struct pbuf *p;
+
+	chThdSleepMilliseconds(5000);
+
+	pcb = udp_new();
+	udp_bind(pcb, IP_ADDR_ANY, 6000);
+
+	while (1) {
+		p = pbuf_alloc(PBUF_TRANSPORT, sizeof(test_buf), PBUF_RAM);
+		memcpy(p->payload, test_buf, sizeof(test_buf));
+		udp_sendto(pcb, p, IP_ADDR_BROADCAST, 6001);
+		pbuf_free(p);
+
+		//~ chThdSleepMilliseconds(1);
+	}
+
+	return 0;
+}
+
+
+
+
 int main(void) {
 
 	halInit();
@@ -102,8 +131,9 @@ int main(void) {
 	};
 	chThdCreateStatic(wa_lwip_thread, LWIP_THREAD_STACK_SIZE, NORMALPRIO + 1, lwip_thread, &default_ip);
 
-	/* Speed test TCP server thread */
-	chThdCreateStatic(wa_test_thread, sizeof(wa_test_thread), NORMALPRIO + 1, test_thread, NULL);
+	/* Speed test TCP & UDP server thread */
+	chThdCreateStatic(wa_test_thread, sizeof(wa_test_thread), NORMALPRIO, test_thread, NULL);
+	chThdCreateStatic(wa_test_thread2, sizeof(wa_test_thread2), NORMALPRIO, test_thread2, NULL);
 
 	/* Valve controller initialization. */
 	vc_init(&vc);

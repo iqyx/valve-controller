@@ -21,6 +21,7 @@
 #define ID_BASE 0x1ffff7e8
 
 struct valve_controller vc;
+uint8_t test_buf[1024] = {0, };
 
 static WORKING_AREA(waThread1, 128);
 static msg_t Thread1(void *arg) {
@@ -36,6 +37,40 @@ static msg_t Thread1(void *arg) {
 		}
 		chThdSleepMilliseconds(500);
 	}
+	return 0;
+}
+
+
+static WORKING_AREA(wa_test_thread, 1024);
+static msg_t test_thread(void *arg) {
+
+	(void)arg;
+	chRegSetThreadName("test");
+
+	int ls, ns;
+	struct sockaddr_in saddr;
+
+	ls = lwip_socket(AF_INET, SOCK_STREAM, 0);
+
+	saddr.sin_len = sizeof(saddr);
+	saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	saddr.sin_port = htons(6000);
+	saddr.sin_family = AF_INET;
+
+	lwip_bind(ls,(struct sockaddr *)&saddr, sizeof(saddr));
+	lwip_listen(ls, 0);
+
+	while ((ns = lwip_accept(ls, NULL, NULL))) {
+
+		int32_t len;
+		while ((len = lwip_write(ns, test_buf, sizeof(test_buf)))) {
+			if (len <= 0) {
+				break;
+			}
+		}
+		lwip_close(ns);
+	}
+
 	return 0;
 }
 
@@ -66,6 +101,9 @@ int main(void) {
 		.gateway = 0x0100a8c0         /* 192.168.0.1   */
 	};
 	chThdCreateStatic(wa_lwip_thread, LWIP_THREAD_STACK_SIZE, NORMALPRIO + 1, lwip_thread, &default_ip);
+
+	/* Speed test TCP server thread */
+	chThdCreateStatic(wa_test_thread, sizeof(wa_test_thread), NORMALPRIO + 1, test_thread, NULL);
 
 	/* Valve controller initialization. */
 	vc_init(&vc);

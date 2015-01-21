@@ -34,7 +34,7 @@ static msg_t Thread1(void *arg) {
 		} else {
 			palTogglePad(GPIOB, 8);
 		}
-		chThdSleepMilliseconds(100);
+		chThdSleepMilliseconds(500);
 	}
 	return 0;
 }

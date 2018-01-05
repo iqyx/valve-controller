@@ -19,10 +19,6 @@ class MainToolbar(QtGui.QToolBar):
 
 		self._vc_driver = None
 
-		self._select_box = VcSelectBox()
-		self._select_box.addItem("First controller")
-		self._select_box.addItem("Second controller")
-
 		self._a_connect = QtGui.QAction(QtGui.QIcon("img/connect.svg"), "Connect", self)
 		self._a_connect.triggered.connect(self.connect)
 		# self._a_connect.setShortcut("ctrl+c")
@@ -30,7 +26,6 @@ class MainToolbar(QtGui.QToolBar):
 		self._a_disconnect.triggered.connect(self.disconnect)
 		self._a_disconnect.setEnabled(False)
 
-		self.addWidget(self._select_box)
 		self.addAction(self._a_connect)
 		self.addAction(self._a_disconnect)
 
@@ -41,13 +36,12 @@ class MainToolbar(QtGui.QToolBar):
 	def connect(self):
 		if self._vc_driver:
 			vclist = []
-			vclist.append(VcController("192.168.0.20", 80, 0, 24))
+			vclist.append(VcController("192.168.88.138", 5000, 0, 24))
 			self._vc_driver.connect(vclist)
 
 			# manipulate toolbar buttons and vcdriver selection
 			self._a_connect.setEnabled(False)
 			self._a_disconnect.setEnabled(True)
-			self._select_box.setEnabled(False)
 
 	def disconnect(self):
 		if self._vc_driver:
@@ -56,4 +50,3 @@ class MainToolbar(QtGui.QToolBar):
 			# manipulate toolbar buttons and vcdriver selection
 			self._a_connect.setEnabled(True)
 			self._a_disconnect.setEnabled(False)
-			self._select_box.setEnabled(True)

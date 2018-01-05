@@ -24,7 +24,7 @@ class ScheduleView(QtGui.QDockWidget):
 		self._table.setColumnWidth(0, 120)
 		for valve in range(valves):
 			self._table.headerItem().setText(valve + 1, str(valve))
-			self._table.setColumnWidth(valve + 1, 20)
+			self._table.setColumnWidth(valve + 1, 24)
 
 
 	def clearSchedule(self):
@@ -48,10 +48,10 @@ class ScheduleView(QtGui.QDockWidget):
 			for i in range(columns):
 				if i in valve_list:
 					item.setIcon(i + 1, self._icon_opened)
-					item.setText(i + 1, "opened")
+					# item.setText(i + 1, "opened")
 				else:
 					item.setIcon(i + 1, self._icon_closed)
-					item.setText(i + 1, "closeed")
+					# item.setText(i + 1, "closed")
 
 			self._table.addTopLevelItem(item)
 

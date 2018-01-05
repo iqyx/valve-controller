@@ -62,7 +62,8 @@ class ValveControl(QtGui.QDockWidget):
 			hlayout = self._vlayout.itemAt(v)
 			for h in reversed(range(hlayout.count())):
 				item = hlayout.itemAt(h)
-				item.widget().close()
+				if item.widget():
+					item.widget().close()
 				hlayout.removeItem(item)
 
 

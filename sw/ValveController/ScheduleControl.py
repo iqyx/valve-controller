@@ -87,10 +87,16 @@ class ScheduleControl(QtGui.QToolBar):
 
 
 	def advanceSchedule(self, pos):
-		self._schedule_pos = pos
-
 		if self._schedule_view:
-			self._schedule_view.setPosition(pos)
+			self._schedule_view.setPosition(self._schedule_pos)
+
+		if pos >= len(self._schedule):
+			self.stopSchedule()
+			return
+
+		self._schedule_pos = pos
+		if self._schedule_view:
+			self._schedule_view.setPosition(self._schedule_pos)
 
 		if self._vc_driver:
 			self._vc_driver.setValves(self._schedule[self._schedule_pos].getValves())
@@ -125,7 +131,6 @@ class ScheduleControl(QtGui.QToolBar):
 
 	def clearSchedule(self):
 		if not self._schedule_running:
-			self.restartSchedule()
 			self._schedule = []
 			self._schedule_columns = 0
 
@@ -195,3 +200,5 @@ class ScheduleControl(QtGui.QToolBar):
 			self._a_run.setEnabled(True)
 			self._a_stop.setEnabled(False)
 			self._a_restart.setEnabled(True)
+
+			self.advanceSchedule(0)

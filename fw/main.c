@@ -17,10 +17,12 @@
 #include <lwip/sockets.h>
 
 #include "valve_controller.h"
+#include "discovery.h"
 
 #define ID_BASE 0x1ffff7e8
 
 struct valve_controller vc;
+Discovery discovery;
 
 static WORKING_AREA(waThread1, 128);
 static msg_t Thread1(void *arg) {
@@ -70,6 +72,9 @@ int main(void) {
 	/* Valve controller initialization. */
 	vc_init(&vc);
 
+	discovery_init(&discovery);
+	discovery_set_mac(&discovery, mac_address);
+
 	/* Main task observing link cnages and doing DHCP. */
 	int last_link_status = 0;
 	while (1) {
@@ -87,6 +92,8 @@ int main(void) {
 		/* GPIOC0 is orange ethernet socket LED. Lit it when DHCP is bound. */
 		if (netif_default->dhcp->state == DHCP_BOUND) {
 			palClearPad(GPIOC, 0);
+			discovery_set_ip(&discovery, (uint8_t *)&(netif_default->ip_addr.addr));
+			discovery_send_broadcast(&discovery);
 		} else {
 			palSetPad(GPIOC, 0);
 		}

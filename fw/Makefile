@@ -139,6 +139,7 @@ CSRC = $(PORTSRC) \
        switching_board.c \
        board.c \
        valve_controller.c \
+       discovery.c \
        main.c
 
 
